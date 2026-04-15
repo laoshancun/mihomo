@@ -15,23 +15,29 @@ type AuthUser struct {
 	Pass string
 }
 
-type inMemoryAuthenticator struct {
+type InMemoryAuthenticator struct {
 	storage   map[string]string
 	usernames []string
 }
 
-func (au *inMemoryAuthenticator) Verify(user string, pass string) bool {
+func (au *InMemoryAuthenticator) Verify(user string, pass string) bool {
 	realPass, ok := au.storage[user]
 	return ok && realPass == pass
 }
 
-func (au *inMemoryAuthenticator) Users() []string { return au.usernames }
+func (au *InMemoryAuthenticator) Users() []string { return au.usernames }
+
+// LookupPass returns the password for a given user and whether the user exists.
+func (au *InMemoryAuthenticator) LookupPass(user string) (pass string, ok bool) {
+	pass, ok = au.storage[user]
+	return
+}
 
 func NewAuthenticator(users []AuthUser) Authenticator {
 	if len(users) == 0 {
 		return nil
 	}
-	au := &inMemoryAuthenticator{
+	au := &InMemoryAuthenticator{
 		storage:   make(map[string]string),
 		usernames: make([]string, 0, len(users)),
 	}

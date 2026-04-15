@@ -23,6 +23,8 @@ import (
 
 	"github.com/metacubex/http"
 	"github.com/metacubex/http/httputil"
+	componentAuth "github.com/metacubex/mihomo/component/auth"
+	authStore "github.com/metacubex/mihomo/listener/auth"
 	"github.com/metacubex/quic-go"
 	"github.com/metacubex/sing-quic/hysteria2"
 	E "github.com/metacubex/sing/common/exceptions"
@@ -178,9 +180,23 @@ func New(config LC.Hysteria2Server, tunnel C.Tunnel, additions ...inbound.Additi
 		return nil, err
 	}
 
-	userNameList := make([]string, 0, len(config.Users))
-	userPasswordList := make([]string, 0, len(config.Users))
-	for name, password := range config.Users {
+	users := config.Users
+	if len(users) == 0 {
+		if auth := authStore.Default.Authenticator(); auth != nil {
+			if memAuth, ok := auth.(*componentAuth.InMemoryAuthenticator); ok {
+				users = make(map[string]string, len(memAuth.Users()))
+				for _, username := range memAuth.Users() {
+					if pass, exists := memAuth.LookupPass(username); exists {
+						users[username] = pass
+					}
+				}
+			}
+		}
+	}
+
+	userNameList := make([]string, 0, len(users))
+	userPasswordList := make([]string, 0, len(users))
+	for name, password := range users {
 		userNameList = append(userNameList, name)
 		userPasswordList = append(userPasswordList, password)
 	}
